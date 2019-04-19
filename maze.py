@@ -216,7 +216,7 @@ class Maze:
             ]
         elif self.current_ang is 3:
             index_list_list = [
-                [self.coord_to_index((x+j,y-i-(not j))) for j in [-1,1,0]]
+                [self.coord_to_index((x-j,y-i-(not j))) for j in [-1,1,0]]
                 for i in [0,1,2]
             ]
         return index_list_list
