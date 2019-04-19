@@ -1,0 +1,4 @@
+discord.py
+beautifulsoup4==4.7.1
+html5lib==1.0.1
+
