@@ -36,10 +36,12 @@ async def on_reaction_add(reaction, user):
         return 
     emoji = reaction.emoji
     maze = maze_dict[reaction.message.id]
-    client.loop.create_task(reaction.remove(user))
-    if emoji == '🗺':
-        await reaction.message.channel.send(as_code(maze.get_map()))
     
+    if emoji == '🗺':
+        await reaction.message.edit(embed=discord.Embed(description=as_code(maze.get_mapped())))
+        return 
+    
+    client.loop.create_task(reaction.remove(user))
     if emoji == '◀':
         maze.turn_l()
     elif emoji == '▶':
@@ -51,6 +53,12 @@ async def on_reaction_add(reaction, user):
     else:
         print(emoji)
     
-    await reaction.message.edit(content = as_code(maze.get_aisle_aa())+f'\n{maze.current_coord} / [10, 10]')
+    await reaction.message.edit(content = as_code(maze.get_aisle_aa())+f'\n{maze.current_coord} / [10, 10]',embed=reaction.message.embeds and discord.Embed(description=as_code(maze.get_mapped())) or None)
+    
+@client.event
+async def on_reaction_remove(reaction, user):
+    if maze_dict.get(reaction.message.id) and reaction.emoji == '🗺':
+        print('close map')
+        await reaction.message.edit(embed=None)
     
 client.run(token)

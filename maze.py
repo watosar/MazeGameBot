@@ -106,6 +106,8 @@ class Maze:
         self.maze = make_maze(size)
         self.current_coord = [0,0]
         self.current_ang = 1
+        self.mapped_index_set = {1,2,3}
+        self.mapping()
     
     @property
     def current_index(self):
@@ -137,7 +139,7 @@ class Maze:
     def move_forward(self, step=1):
         if not step:
             return
-        for i in range(step):
+        for _ in range(step):
             old_coord = self.current_coord[:]
             self.current_coord[self.current_ang%2] += self.current_ang<3 or -1
             c = self.current_coord[self.current_ang%2]
@@ -145,63 +147,93 @@ class Maze:
                 continue
             break
         else:
+            self.mapping()
             return 
-        print('breaked')
         self.current_coord = old_coord
+        self.mapping()
         
     
     def turn_r(self):
         self.current_ang = (self.current_ang+1)%4
-        
+        self.mapping()
         
     def turn_l(self):
         self.current_ang = (self.current_ang-1)%4
+        self.mapping()
     
-    def get_map(self):
+    def get_full_map(self):
         maze = self.maze[:]
         maze[self.current_index] = 2
         size = self.size
         return '\n'.join(''.join(('◼️','◻️️',('▶️','🔽','◀️','🔼')[self.current_ang])[x] for x in maze[1+(1+size)*y:(1+size)*(y+1)])for y in range(size))
+        
+    def mapping(self):
+        self.mapped_index_set.add(self.current_index)
+        passable = self.get_forward_3block()
+        fst_index_list, *index_list_list = self.get_forward_3block_index_list_list()
+        self.mapped_index_set.update(fst_index_list)
+        for key,block_index_list in zip(('front', 'middle'),index_list_list):
+            center = block_index_list.pop()
+            self.mapped_index_set.update(block_index_list)
+            if not passable[key]['center']:
+                break
+            self.mapped_index_set.add(center)
     
-    def get_aisle_aa(self):
+    def get_mapped(self):
+        maze = self.maze[:]
+        size = self.size
+        for i in self.mapped_index_set:
+            maze[i] += 3
+        maze[self.current_index] = 2
+        
+        return '\n'.join(
+            ''.join(
+                (
+                    '🚫','🚫',
+                    ('▶️','🔽','◀️','🔼')[self.current_ang],
+                    '◼️','◻️️'
+                )[x] for x in maze[1+(1+size)*y:(1+size)*(y+1)]
+            )
+            for y in range(size)
+        )
+        
+    def get_forward_3block_index_list_list(self):
         x,y = self.current_coord
         if self.current_ang is 0:
-            passable = {
-                key: {
-                    'right': not self.maze[self.coord_to_index((x+i,y+1))],
-                    'left': not self.maze[self.coord_to_index((x+i,y-1))],
-                    'center': not self.maze[self.coord_to_index((x+1+i,y))],
-                }
-                for i,key in enumerate(('front','middle','back'))
-            }
+            index_list_list = [
+                [self.coord_to_index((x+i+(not j),y+j)) for j in [1,-1,0]]
+                for i in [0,1,2]
+            ]
         elif self.current_ang is 2:
-            passable = {
-                key: {
-                    'right': not self.maze[self.coord_to_index((x-i,y-1))],
-                    'left': not self.maze[self.coord_to_index((x-i,y+1))],
-                    'center': not self.maze[self.coord_to_index((x-1-i,y))],
-                }
-                for i,key in enumerate(('front','middle','back'))
-            }
+            index_list_list = [
+                [self.coord_to_index((x-i-(not j),y-j)) for j in [1,-1,0]]
+                for i in [0,1,2]
+            ]
         elif self.current_ang is 1:
-            passable = {
-                key: {
-                    'right': not self.maze[self.coord_to_index((x-1,y+i))],
-                    'left': not self.maze[self.coord_to_index((x+1,y+i))],
-                    'center': not self.maze[self.coord_to_index((x,y+1+i))],
-                }
-                for i,key in enumerate(('front','middle','back'))
-            }
+            index_list_list = [
+                [self.coord_to_index((x+j,y+i+(not j))) for j in [-1,1,0]]
+                for i in [0,1,2]
+            ]
         elif self.current_ang is 3:
-            passable = {
-                key: {
-                    'right': not self.maze[self.coord_to_index((x+1,y-i))],
-                    'left': not self.maze[self.coord_to_index((x-1,y-i))],
-                    'center': not self.maze[self.coord_to_index((x,y-1-i))],
-                }
-                for i,key in enumerate(('front','middle','back'))
+            index_list_list = [
+                [self.coord_to_index((x+j,y-i-(not j))) for j in [-1,1,0]]
+                for i in [0,1,2]
+            ]
+        return index_list_list
+    
+    def get_forward_3block(self):
+        block_index_list_list = self.get_forward_3block_index_list_list()
+        passable = {
+            key1: {
+                key2: not self.maze[index]
+                for key2,index in zip(('right','left','center'),block_index_list)
             }
-        
+            for key1, block_index_list in zip(('front','middle','back'),block_index_list_list)
+        }
+        return passable
+    
+    def get_aisle_aa(self):
+        passable = self.get_forward_3block()
         aisle = ailse_from_passable_info(passable)
         return aisle
 
