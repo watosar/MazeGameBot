@@ -141,7 +141,7 @@ class Maze:
             return
         for _ in range(step):
             old_coord = self.current_coord[:]
-            self.current_coord[self.current_ang%2] += self.current_ang<3 or -1
+            self.current_coord[self.current_ang%2] += self.current_ang<2 or -1
             c = self.current_coord[self.current_ang%2]
             if 0<= c<self.size-2 and not self.current_cell:
                 continue
