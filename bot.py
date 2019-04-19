@@ -1,6 +1,11 @@
 import os
 import discord
 from maze import Maze
+import asyncio
+import logging
+
+logging.basicConfig(level=logging.INFO)
+asyncio.set_event_loop(asyncio.new_event_loop())
 
 token = os.environ['token']
 client = discord.Client()
@@ -12,6 +17,7 @@ def as_code(text):
     
 @client.event
 async def on_ready():
+    print(discord.__version__)
     print(f'logged on as {client.user}')
     
 @client.event
